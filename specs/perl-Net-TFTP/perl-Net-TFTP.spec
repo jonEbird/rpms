@@ -9,7 +9,7 @@
 
 Summary: TFTP Client class
 Name: perl-Net-TFTP
-Version: 0.17
+Version: 0.19
 Release: 1%{?dist}
 License: Artistic/GPL
 Group: Applications/CPAN
