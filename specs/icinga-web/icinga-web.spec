@@ -10,87 +10,115 @@
 %define reportingcachedir %{_localstatedir}/cache/%{name}/reporting
 
 %if "%{_vendor}" == "suse"
+%define phpname php5
+%endif
+%if "%{_vendor}" == "redhat"
+%define phpname php
+%endif
+
+# el5 requires newer php53 rather than php (5.1)
+%if 0%{?el5}
+%define phpname php53
+%endif
+
+%if "%{_vendor}" == "suse"
 %define apacheconfdir  %{_sysconfdir}/apache2/conf.d
 %define apacheuser wwwrun
 %define apachegroup www
-%endif
-%if "%{_vendor}" == "redhat"
-%define apacheconfdir  %{_sysconfdir}/httpd/conf.d
-%define apacheuser apache
-%define apachegroup apache
-%endif
-
-%if "%{_vendor}" == "suse"
 %define extcmdfile %{_localstatedir}/icinga/rw/icinga.cmd
 %endif
 %if "%{_vendor}" == "redhat"
+%define apacheconfdir %{_sysconfdir}/httpd/conf.d
+%define apacheuser apache
+%define apachegroup apache
 %define extcmdfile %{_localstatedir}/spool/icinga/cmd/icinga.cmd
 %endif
 
+Summary:        Open Source host, service and network monitoring Web UI
+Name:           icinga-web
+Version:        1.9.0
+Release:        %{revision}%{?dist}
+License:        GPLv3
+Group:          Applications/System
+URL:            http://www.icinga.org
+BuildArch:      noarch
 
-Summary: Open Source host, service and network monitoring Web UI
-Name: icinga-web
-Version: 1.8.1
-Release: %{revision}%{?dist}
-License: GPLv3
-Group: Applications/System
-URL: http://www.icinga.org/
-BuildArch: noarch
 %if "%{_vendor}" == "suse"
-AutoReqProv: Off
+AutoReqProv:    Off
 %endif
 
-# Source0: icinga-web-%{version}.tar.gz
-Source0: https://downloads.sourceforge.net/project/icinga/icinga-web/%{version}/icinga-web-%{version}.tar.gz
+Source0:        https://downloads.sourceforge.net/project/icinga/icinga-web/%{version}/icinga-web-%{version}.tar.gz
 
-BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root
 
-Requires: perl(Locale::PO)
-Requires: php >= 5.2.3
-Requires: php-pear
-Requires: php-gd
-Requires: php-xml
-Requires: php-ldap
-Requires: php-pdo
-Requires: php-dom
+BuildRequires:  %{phpname} >= 5.2.3
+BuildRequires:  %{phpname}-gd
+BuildRequires:  %{phpname}-ldap
+BuildRequires:  %{phpname}-pdo
+
 %if "%{_vendor}" == "redhat"
-Requires: php-common
+BuildRequires:  %{phpname}-xml
+BuildRequires:  php-pear
 %endif
 %if "%{_vendor}" == "suse"
-Requires: php-xsl
-Requires: apache2-mod_php5
+BuildRequires:  %{phpname}-devel >= 5.2.3 
+BuildRequires:  %{phpname}-json
+BuildRequires:  %{phpname}-sockets
+BuildRequires:  %{phpname}-xsl
+BuildRequires:  %{phpname}-dom
+BuildRequires:  %{phpname}-pear
 %endif
-Requires: php-spl
-Requires: pcre >= 7.6
+
+Requires:       pcre >= 7.6
+Requires:       perl(Locale::PO)
+Requires:       %{phpname} >= 5.2.3
+Requires:       %{phpname}-gd
+Requires:       %{phpname}-ldap
+Requires:       %{phpname}-pdo
+%if "%{_vendor}" == "redhat"
+Requires:       %{phpname}-common
+Requires:       %{phpname}-xml
+Requires:       php-pear
+%endif
+%if "%{_vendor}" == "suse"
+Requires:       %{phpname}-pear
+Requires:       %{phpname}-xsl
+Requires:       %{phpname}-dom
+Requires:       %{phpname}-tokenizer
+Requires:       %{phpname}-gettext
+Requires:       %{phpname}-ctype
+Requires:       %{phpname}-json
+Requires:       %{phpname}-pear
+Requires:       apache2-mod_php5
+%endif
 
 
-##############################
 %description
-##############################
 Icinga Web for Icinga Core, uses Icinga IDOUtils DB as data source.
 
-##############################
 %package module-pnp
-##############################
-Summary: PNP Integration module for Icinga Web
-Group: Applications/System
-Requires: pnp4nagios
-Requires: %{name} = %{version}-%{release}
+Summary:        PNP Integration module for Icinga Web
+Group:          Applications/System
+Requires:       pnp4nagios
+Requires:       %{name} = %{version}-%{release}
 
-##############################
 %description module-pnp
-##############################
 PNP Integration module for Icinga Web
 
+%package module-nagiosbp
+Summary:        Nagios Business Process Addon Integration module for Icinga Web
+Group:          Applications/System
+Requires:       nagios-business-process-addon-icinga
+Requires:       %{name} = %{version}-%{release}
 
-##############################
+%description module-nagiosbp
+Nagios Business Process Addon Integration module for Icinga Web
+
+
 %prep
-##############################
-%setup -n %{name}-%{version}
+%setup -q -n %{name}-%{version}
 
-##############################
 %build
-##############################
 %configure \
     --prefix="%{_datadir}/%{name}" \
     --datadir="%{_datadir}/%{name}" \
@@ -109,9 +137,7 @@ PNP Integration module for Icinga Web
     --with-clearcache-path='%{_bindir}' \
     --with-web-apache-path=%{apacheconfdir}
 
-##############################
 %install
-##############################
 %{__rm} -rf %{buildroot}
 %{__mkdir} -p %{buildroot}/%{apacheconfdir}
 %{__mkdir} -p %{buildroot}/%{_bindir}
@@ -133,10 +159,18 @@ PNP Integration module for Icinga Web
 # place the pnp templates for -module-pnp
 %{__cp} contrib/PNP_Integration/templateExtensions/* %{buildroot}%{_datadir}/%{name}/app/modules/Cronks/data/xml/extensions/
 
-##############################
-%pre
-##############################
+# place the nagiosbp files for -module-nagiosbp
+%{__mkdir} %{buildroot}%{_datadir}/%{name}/app/modules/BPAddon
+%{__cp} -r contrib/businessprocess-icinga-cronk/BPAddon/* %{buildroot}%{_datadir}/%{name}/app/modules/BPAddon/
 
+# adjust the config for the packaged nagiosbp
+%{__sed} -i -e 's|/usr/local/nagiosbp/etc|/etc/nagiosbp|' \
+	-i -e 's|/usr/local/nagiosbp/bin|/usr/bin|' \
+	%{buildroot}%{_datadir}/%{name}/app/modules/BPAddon/config/bp.xml
+%{__sed} -i -e 's|\(name="pass">\)icingaadmin|\1password|' \
+	%{buildroot}%{_datadir}/%{name}/app/modules/BPAddon/config/cronks.xml
+
+%pre
 # Add apacheuser in the icingacmd group
 # If the group exists, add the apacheuser in the icingacmd group.
 # It is not neccessary that icinga-web is installed on the same system as
@@ -152,36 +186,29 @@ fi
 # uncomment if building from git
 # %{__rm} -rf %{buildroot}%{_datadir}/icinga-web/.git
 
-##############################
 %preun
-##############################
 
-##############################
 %post
-##############################
-
 # clean config cache, e.g. after upgrading
 %{__rm} -rf %{cachedir}/config/*.php
 
-##############################
 %post module-pnp
-##############################
-
 # clean cronk template cache
 %{__rm} -rf %{cachedir}/CronkTemplates/*.php
 
-##############################
-%clean
-##############################
+%post module-nagiosbp
+%{_bindir}/%{name}-clearcache
 
+%clean
 %{__rm} -rf %{buildroot}
 
-##############################
 %files
-##############################
 # main dirs
-%doc etc/schema contrib doc/README.RHEL doc/AUTHORS doc/CHANGELOG-1.7 doc/CHANGELOG-1.x doc/LICENSE
 %defattr(-,root,root)
+%doc etc/schema doc/README.RHEL doc/AUTHORS doc/CHANGELOG-1.7 doc/CHANGELOG-1.x doc/LICENSE
+# packaged by subpackages
+%exclude %{_datadir}/%{name}/app/modules/BPAddon
+%exclude %{_datadir}/%{name}/app/modules/Cronks/data/xml/extensions
 %{_datadir}/%{name}/app
 %{_datadir}/%{name}/doc
 %{_datadir}/%{name}/etc
@@ -201,18 +228,41 @@ fi
 %defattr(-,root,root)
 %{_bindir}/%{name}-clearcache
 
-##############################
 %files module-pnp
-##############################
 # templates, experimental treatment as configs (noreplace)
-%doc contrib/PNP_Integration/README
 %defattr(-,root,root)
+%doc contrib/PNP_Integration/README contrib/PNP_Integration/INSTALL
+%doc contrib/PNP_Integration/doc contrib/nginx
 %dir %{_datadir}/icinga-web/app/modules/Cronks/data/xml/extensions
 %config(noreplace) %attr(644,-,-) %{_datadir}/%{name}/app/modules/Cronks/data/xml/extensions/*
 
-##############################
+%files module-nagiosbp
+# templates, experimental treatment as configs (noreplace)
+%defattr(-,root,root)
+%doc contrib/businessprocess-icinga-cronk/doc
+%config(noreplace) %{_datadir}/%{name}/app/modules/BPAddon/config/*
+%{_datadir}/%{name}/app/modules/BPAddon
+
 %changelog
-##############################
+* Tue May 07 2013 Markus Frosch <markus@lazyfrosch.de> - 1.9.0-1
+- release 1.9.0
+
+* Tue Apr 30 2013 Markus Frosch <markus@lazyfrosch.de> - 1.9.0-0.1.beta
+- release 1.9.0-beta
+
+* Thu Feb 15 2013 Michael Friedrich <michael.friedrich@netways.de> - 1.8.2-2
+- fix rpmlint errors/warnings
+
+* Wed Feb 11 2013 Markus Frosch <markus.frosch@netways.de> - 1.8.2-1
+- bump to 1.8.2
+
+* Wed Feb 06 2013 Michael Friedrich <michael.friedrich@netways.de> - 1.8.1-3
+- fix php5-pear reqs
+- fix php5-dom (suse), php-xml (rhel) and other missing/faulty reqs
+
+* Fri Jan 25 2013 Christian Dengler <christian.dengler@netways.de> - 1.8.1-2
+- add BuildRequires; add subpackage for nagiosbp
+
 * Wed Dec 5 2012 Marius Hein <marius.hein@netways.de> - 1.8.1-1
 - bump to 1.8.1
 
@@ -248,7 +298,7 @@ fi
 
 * Mon Feb 20 2012 Michael Friedrich <michael.friedrich@univie.ac.at> - 1.6.2-1
 - bump to 1.6.2
-- clean config cache in %post (important for upgrades) #2217
+- clean config cache in post (important for upgrades) #2217
 
 * Mon Dec 12 2011 Michael Friedrich <michael.friedrich@univie.ac.at> - 1.6.1-1
 - bump to 1.6.1
@@ -256,15 +306,15 @@ fi
 
 * Sat Oct 22 2011 Michael Friedrich <michael.friedrich@univie.ac.at> - 1.6.0-1
 - bump to 1.6.0
-- add --with-cache-dir and use %{_localstatedir}/cache/icinga-web
+- add --with-cache-dir and use _localstatedir/cache/icinga-web
 
 * Thu Sep 15 2011 Michael Friedrich <michael.friedrich@univie.ac.at> - 1.5.2-1
 - drop icinga-api dependency
 - drop BuildRequires - not needed at this stage
-- add --with-api-cmd-file, using same location as icinga rpm %{_localstatedir}/icinga/rw/icinga.cmd
-- change new config location from default $prefix/etc/conf.d to %{_sysconfdir}/icinga-web
+- add --with-api-cmd-file, using same location as icinga rpm _localstatedir/icinga/rw/icinga.cmd
+- change new config location from default $prefix/etc/conf.d to _sysconfdir/icinga-web
 - mark all config xmls as config noreplace
-- set %{_localstatedir}/log/icinga-web and use it instead of $prefix/logs
+- set _localstatedir/log/icinga-web and use it instead of $prefix/logs
 - set apache user/group to write logdir
 - reorder files to be included in the package
 
