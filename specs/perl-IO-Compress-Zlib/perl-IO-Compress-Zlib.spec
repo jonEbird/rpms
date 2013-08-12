@@ -16,9 +16,9 @@ Version: 2.015
 Release: 1%{?dist}
 License: Artistic/GPL
 Group: Applications/CPAN
-URL: http://search.cpan.org/dist/IO-Compress-Zlib/
+URL: http://search.cpan.org/~pmqs/IO-Compress-Zlib-%{version}/
 
-Source: http://www.cpan.org/modules/by-module/IO/IO-Compress-Zlib-%{version}.tar.gz
+Source: http://search.cpan.org/CPAN/authors/id/P/PM/PMQS/IO-Compress-Zlib-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildArch: noarch
@@ -53,9 +53,9 @@ find examples/ -type f -exec %{__chmod} a-x {} \;
 %doc Changes MANIFEST META.yml README examples/
 %doc %{_mandir}/man3/IO::Compress::*.3pm*
 %doc %{_mandir}/man3/IO::Uncompress::*.3pm*
-%dir %{perl_vendorlib}/IO/
-%{perl_vendorlib}/IO/Compress/
-%{perl_vendorlib}/IO/Uncompress/
+%dir %{perl_vendorarch}/IO/
+%{perl_vendorarch}/IO/Compress/
+%{perl_vendorarch}/IO/Uncompress/
 
 %changelog
 * Wed Oct 08 2008 Dag Wieers <dag@wieers.com> - 2.015-1
